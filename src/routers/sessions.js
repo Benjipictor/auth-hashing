@@ -8,11 +8,18 @@ const prisma = require('../utils/prisma.js')
 router.post('/', async (req, res) => {
     const { username, password } = req.body;
     // Get the username and password from the request body
-
-    // Check that a user with that username exists in the database
-    // Use bcrypt to check that the provided password matches the hashed password on the user
-    // If either of these checks fail, respond with a 401 "Invalid username or password" error
-
+    const foundUser = await prisma.user.findUnique({
+        where: {username: username}
+    })
+    const match = await bcrypt.compare(password, foundUser.password)
+    
+    if (!foundUser || !match) {
+        res.status(401).json({message: 'invalid username or password'})
+    } else {
+        const token = jwt.sign(foundUser.username, process.env.JWT_SECRET)
+        res.status(200).json({token})
+    }
+    
     // If the user exists and the passwords match, create a JWT containing the username in the payload
     // Use the JWT_SECRET environment variable for the secret key
 
